@@ -52,7 +52,7 @@ def export_airport_supp() -> None:
 def export_airport_sid() -> None:
     arpt_list = df_proc.loc[(df_proc['SUBS_CODE'] == 'D') &
                             (df_proc['ROUTE_TYPE'].isin(
-                                ['1', '2', '3', '4', '5', '6'])),
+                                ['0', '1', '2', '3', '4', '5', '6'])),
                             'ARPT_IDENT'].value_counts(sort=False).index.to_list()
     for arpt in arpt_list:  # by airport
         df_arpt_proc = df_proc[(df_proc['ARPT_IDENT'] == arpt) &
@@ -60,7 +60,7 @@ def export_airport_sid() -> None:
                                (df_proc['ROUTE_TYPE'].isin(['1', '2', '3', '4', '5', '6']))]  # RNAV SID
         # structure: {type:{procedure:[[leg,],]}}
         dict_arpt = {'main': {}, 'trans': {}}
-        for proc_type in ['1', '2', '3', '4', '5', '6']:  # force sequence
+        for proc_type in ['0', '1', '2', '3', '4', '5', '6']:  # force sequence
             # by procedure
             df_arpt_proc_type = df_arpt_proc[df_arpt_proc['ROUTE_TYPE'] == proc_type]
             if not df_arpt_proc_type.shape[0]:
@@ -72,7 +72,7 @@ def export_airport_sid() -> None:
                              for _, r in dict_proc['legs'].iterrows()]
                 if proc_type in ['3', '6']:  # SID trans
                     dict_arpt['trans'][f"{proc_conn}.{proc_name}"] = proc_legs
-                elif proc_type in ['1', '4']:  # runway -> SID common
+                elif proc_type in ['0', '1', '4']:  # runway -> SID common
                     proc_conn = proc_conn[2:]
                     if proc_conn[-1] == 'B':
                         proc_conn = proc_conn[:-1]
@@ -80,7 +80,7 @@ def export_airport_sid() -> None:
                         dict_arpt['main'][f"{proc_name}.{proc_conn}R"] = proc_legs
                     else:
                         dict_arpt['main'][f"{proc_name}.{proc_conn}"] = proc_legs
-                elif proc_type == ['2', '5']:  # SID common
+                elif proc_type in ['2', '5']:  # SID common
                     if pd.isna(proc_conn) or proc_conn == 'ALL':
                         is_extended = False
                         # find a previous procedure with same ident
@@ -106,10 +106,10 @@ def export_airport_sid() -> None:
                 continue
             full_lines = ["[list]"]
             i = 0
-            for pn in dict_arpt[pt].keys():
+            for pn in sorted(dict_arpt[pt].keys()):
                 full_lines.append(f"Procedure.{i}={pn}")
                 i += 1
-            for pn in dict_arpt[pt].keys():  # pn:str, pl:list
+            for pn in sorted(dict_arpt[pt].keys()):  # pn:str, pl:list
                 k = 0
                 pl = dict_arpt[pt][pn]
                 for ls in pl:  # ls:list
@@ -180,10 +180,10 @@ def export_airport_star() -> None:
                 continue
             full_lines = ["[list]"]
             i = 0
-            for pn in dict_arpt[pt].keys():
+            for pn in sorted(dict_arpt[pt].keys()):
                 full_lines.append(f"Procedure.{i}={pn}")
                 i += 1
-            for pn in dict_arpt[pt].keys():  # pn:str, pl:list
+            for pn in sorted(dict_arpt[pt].keys()):  # pn:str, pl:list
                 k = 0
                 pl = dict_arpt[pt][pn]
                 for ls in pl:  # ls:list
@@ -232,10 +232,10 @@ def export_airport_app() -> None:
                 continue
             full_lines = ["[list]"]
             i = 0
-            for pn in dict_arpt[pt].keys():
+            for pn in sorted(dict_arpt[pt].keys()):
                 full_lines.append(f"Procedure.{i}={pn}")
                 i += 1
-            for pn in dict_arpt[pt].keys():  # pn:str, pl:list
+            for pn in sorted(dict_arpt[pt].keys()):  # pn:str, pl:list
                 k = 0
                 pl = dict_arpt[pt][pn]
                 for ls in pl:  # ls:list
@@ -284,6 +284,7 @@ def extract_leg(row: pd.Series) -> list:
     # find Lat/Lon
     if leg_type in ['PI', 'HA', 'HF', 'HM', 'AF', 'CF', 'DF', 'FC', 'FD', 'RF', 'TF', 'IF']:
         if not pd.isna(pt_name):
+            extracted_lines.append(f"Name={pt_name}")
             latitude, longitude, msg = (0, 0, "")
             if row['FIX_SUBS_CODE'] == 'G':  # use runway csv
                 rw_row = df_runway[(df_runway['ARPT_IDENT'] == arpt) &
@@ -309,11 +310,12 @@ def extract_leg(row: pd.Series) -> list:
         extracted_lines.append("CrossThisPoint=1")
     # heading
     pt_hdg = row['MAG_COURSE']
-    if not pd.isna(pt_hdg):
-        extracted_lines.append("Heading=%d" % int(pt_hdg))
-    elif leg_type in ['PI', 'HA', 'HF', 'HM', 'FM', 'VM', 'CA', 'VA', 'CD', 'VD', 'CF', 'CI', 'VI', 'CR', 'VR', 'FA', 'FC', 'FD']:
-        print_debug_message(
-            f"Warning: Heading missing for {arpt}:{proc_name}:{pt_name}")
+    if leg_type in ['PI', 'HA', 'HF', 'HM', 'FM', 'VM', 'CA', 'VA', 'CD', 'VD', 'CF', 'CI', 'VI', 'CR', 'VR', 'FA', 'FC', 'FD']:
+        if not pd.isna(pt_hdg):
+            extracted_lines.append("Heading=%.01f" % float(pt_hdg))
+        else:
+            print_debug_message(
+                f"Warning: Heading missing for {arpt}:{proc_name}:{pt_name}")
     # turn direction
     pt_tdir = row['TURN_DIR']
     if pt_tdir in ['L', 'R']:
@@ -335,7 +337,8 @@ def extract_leg(row: pd.Series) -> list:
     pt_alt1 = row['ALT_1']
     if not pd.isna(pt_alt1):
         pt_alt_descr = row['ALT_DESCR']
-        if pt_alt_descr in ['+', 'C', 'H', 'J', 'V']:
+        # discrepancies with ARINC-424: G/H/I-@; J-+
+        if pt_alt_descr in ['+', 'C', 'J', 'V']:
             extracted_lines.append("Altitude=%dA" % pt_alt1)
         elif pt_alt_descr in ['-', 'Y']:
             extracted_lines.append("Altitude=%dB" % pt_alt1)
@@ -362,38 +365,36 @@ def extract_leg(row: pd.Series) -> list:
     if not pd.isna(pt_angl):
         extracted_lines.append(f"Slope={-float(pt_angl)}")
     # NavBear
-    if leg_type in ['PI', 'CR', 'VR']:
-        pt_navbear = row['THETA']
-        if not pd.isna(pt_navbear):
-            extracted_lines.append("NavBear=%.01f" % (int(pt_navbear)/10))
-        else:
-            print_debug_message(
-                f"Warning: NavBear missing for {arpt}:{proc_name}:{pt_name}")
+    pt_navbear = row['THETA']
+    if not pd.isna(pt_navbear):
+        extracted_lines.append("NavBear=%.01f" % (int(pt_navbear)/10))
+    elif leg_type in ['PI', 'CR', 'VR']:
+        print_debug_message(
+            f"Warning: NavBear missing for {arpt}:{proc_name}:{pt_name}")
     # NavDist
     if leg_type in ['CD', 'VD', 'FD']:
-        pt_navdist = row['ROUTE_DISTANCE_HOLDING_DISTANCE_OR_TIME']
-        if not pd.isna(pt_navdist) and len(pt_navdist := pt_navdist.strip()) and pt_navdist.isdigit():
-            extracted_lines.append("NavDist=%.01f" % (int(pt_navdist)/10))
+        pt_dort = row['ROUTE_DISTANCE_HOLDING_DISTANCE_OR_TIME']
+        if not pd.isna(pt_dort) and len(pt_dort := pt_dort.strip()) and pt_dort.isdigit():
+            extracted_lines.append("NavDist=%.01f" % (int(pt_dort)/10))
         else:
             print_debug_message(
                 f"Warning: NavDist missing for {arpt}:{proc_name}:{pt_name}")
-    elif leg_type in ['PI', 'AF']:
-        pt_navdist = row['RHO']
-        if not pd.isna(pt_navdist):
-            extracted_lines.append("NavDist=%.01f" % (int(pt_navdist)/10))
-        else:
+    else:
+        pt_navrho = row['RHO']
+        if not pd.isna(pt_navrho):
+            extracted_lines.append("NavDist=%.01f" % (int(pt_navrho)/10))
+        elif leg_type in ['PI', 'AF']:
             print_debug_message(
                 f"Warning: NavDist missing for {arpt}:{proc_name}:{pt_name}")
     # dist
-    if leg_type in ['PI', 'HA', 'HF', 'HM', 'FC']:
-        pt_dort = row['ROUTE_DISTANCE_HOLDING_DISTANCE_OR_TIME']
-        if not pd.isna(pt_dort) and len(pt_dort := pt_dort.strip()) and pt_dort[0] == 'T':
-            extracted_lines.append("Dist=%d" % (int(pt_dort[1:])*1000))  # time
-        elif not pd.isna(pt_dort) and pt_dort.isdigit():  # n miles
-            extracted_lines.append("Dist=%.01f" % (int(pt_dort)/10))
-        else:
-            print_debug_message(
-                f"Warning: Dist missing for {arpt}:{proc_name}:{pt_name}")
+    pt_dort = row['ROUTE_DISTANCE_HOLDING_DISTANCE_OR_TIME']
+    if not pd.isna(pt_dort) and len(pt_dort := pt_dort.strip()) and pt_dort[0] == 'T':
+        extracted_lines.append("Dist=%d" % (int(pt_dort[1:])*1000))  # time
+    elif not pd.isna(pt_dort) and pt_dort.isdigit():  # n miles
+        extracted_lines.append("Dist=%.01f" % (int(pt_dort)/10))
+    elif leg_type in ['PI', 'HA', 'HF', 'HM', 'FC']:
+        print_debug_message(
+            f"Warning: Dist missing for {arpt}:{proc_name}:{pt_name}")
     # Center lat/lon
     if leg_type == 'RF':
         pt_cfix = row['CENTER_FIX_OR_TAA_PROCEDURE_TURN_IND'].strip()
