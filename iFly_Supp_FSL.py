@@ -72,34 +72,26 @@ def export_airport_sid() -> None:
                              for _, r in dict_proc['legs'].iterrows()]
                 if proc_type in ['3', '6']:  # SID trans
                     dict_arpt['trans'][f"{proc_conn}.{proc_name}"] = proc_legs
-                elif proc_type in ['0', '1', '4']:  # runway -> SID common
-                    proc_conn = proc_conn[2:]
-                    if proc_conn[-1] == 'B':
-                        proc_conn = proc_conn[:-1]
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}L"] = proc_legs
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}R"] = proc_legs
+                    continue
+                arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
+                                          'RUNWAY_IDENT'].to_list()
+                if pd.isna(proc_conn) or proc_conn == 'ALL':
+                    is_extended = False
+                    # find a previous procedure with same ident
+                    for pn in dict_arpt['main'].keys():
+                        if pn.split('.')[0] == proc_name:
+                            # drop first point (IF leg)
+                            dict_arpt['main'][pn].extend(proc_legs[1:])
+                            is_extended = True
+                    if is_extended:
+                        continue
                     else:
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}"] = proc_legs
-                elif proc_type in ['2', '5']:  # SID common
-                    if pd.isna(proc_conn) or proc_conn == 'ALL':
-                        is_extended = False
-                        # find a previous procedure with same ident
-                        for pn in dict_arpt['main'].keys():
-                            if pn.split('.')[0] == proc_name:
-                                # drop first point (IF leg)
-                                dict_arpt['main'][pn].extend(proc_legs[1:])
-                                is_extended = True
-                        if not is_extended:  # add this procedure to all runways
-                            arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
-                                                      'RUNWAY_IDENT'].to_list()
-                            for rw in arpt_rwys:  # rw is like "RW09L"
-                                dict_arpt['main'][f"{proc_name}.{rw[2:]}"] = proc_legs
-                            if pd.isna(proc_conn):
-                                print_debug_message(
-                                    f"Warning: uncertain runway, added to all. {arpt}:{proc_name}:{proc_conn}")
-                    else:
-                        proc_conn = proc_conn[2:]
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}"] = proc_legs
+                        proc_conn = 'RW'  # eliminate na
+                if proc_conn[-1] == 'B':
+                    proc_conn = proc_conn[:-1]
+                for rw in arpt_rwys:  # rw is like "RW09L"
+                    if proc_conn in rw:
+                        dict_arpt['main'][f"{proc_name}.{rw[2:]}"] = proc_legs
         # organize this airport
         for pt in ['main', 'trans']:
             if len(dict_arpt[pt]) == 0:
@@ -146,34 +138,26 @@ def export_airport_star() -> None:
                              for _, r in dict_proc['legs'].iterrows()]
                 if proc_type in ['1', '4']:  # STAR trans
                     dict_arpt['trans'][f"{proc_conn}.{proc_name}"] = proc_legs
-                elif proc_type in ['3', '6']:  # STAR common -> runway
-                    proc_conn = proc_conn[2:]
-                    if 'B' in proc_conn:
-                        proc_conn = proc_conn[:-1]
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}L"] = proc_legs
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}R"] = proc_legs
+                    continue
+                arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
+                                          'RUNWAY_IDENT'].to_list()
+                if pd.isna(proc_conn) or proc_conn == 'ALL':
+                    is_extended = False
+                    # find a previous procedure with same ident
+                    for pn in dict_arpt['main'].keys():
+                        if pn.split('.')[0] == proc_name:
+                            # drop first point (IF leg)
+                            dict_arpt['main'][pn].extend(proc_legs[1:])
+                            is_extended = True
+                    if is_extended:
+                        continue
                     else:
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}"] = proc_legs
-                elif proc_type in ['2', '5']:  # STAR common
-                    if pd.isna(proc_conn) or proc_conn == 'ALL':
-                        is_extended = False
-                        # find a previous procedure with same ident
-                        for pn in dict_arpt['main'].keys():
-                            if pn.split('.')[0] == proc_name:
-                                # drop first point (IF leg)
-                                dict_arpt['main'][pn].extend(proc_legs[1:])
-                                is_extended = True
-                        if not is_extended:  # add this procedure to all runways
-                            arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
-                                                      'RUNWAY_IDENT'].to_list()
-                            for rw in arpt_rwys:  # rw is like "RW09L"
-                                dict_arpt['main'][f"{proc_name}.{rw[2:]}"] = proc_legs
-                            if pd.isna(proc_conn):
-                                print_debug_message(
-                                    f"Warning: uncertain runway, added to all. {arpt}:{proc_name}:{proc_conn}")
-                    else:
-                        proc_conn = proc_conn[2:]
-                        dict_arpt['main'][f"{proc_name}.{proc_conn}"] = proc_legs
+                        proc_conn = 'RW'  # eliminate na
+                if proc_conn[-1] == 'B':
+                    proc_conn = proc_conn[:-1]
+                for rw in arpt_rwys:  # rw is like "RW09L"
+                    if proc_conn in rw:
+                        dict_arpt['main'][f"{proc_name}.{rw[2:]}"] = proc_legs
         # organize this airport
         for pt in ['main', 'trans']:
             if len(dict_arpt[pt]) == 0:
