@@ -3,28 +3,31 @@ import shutil
 import math
 import pandas as pd
 
-df_airport = pd.read_csv("FSL-Fulltest/AIRPORT.csv")
-df_runway = pd.read_csv("FSL-Fulltest/RUNWAY.csv")
-df_proc = pd.read_csv("FSL-Fulltest/AIRPORT_PROCEDURE.csv")
-df_waypoint = pd.read_csv("FSL-Fulltest/WAYPOINT.csv")
-df_vhf = pd.read_csv("FSL-Fulltest/VHF_NAVAID.csv")
-df_ndb = pd.read_csv("FSL-Fulltest/NDB_NAVAID.csv")
-output_folder = "iFly-Final"
-debug_lines = []
+fsl_base_dir = "FSL-2313"
+output_dir = "iFly-2313"
+
+df_airport = pd.read_csv(f"{fsl_base_dir}/AIRPORT.csv")
+df_runway = pd.read_csv(f"{fsl_base_dir}/RUNWAY.csv")
+df_proc = pd.read_csv(f"{fsl_base_dir}/AIRPORT_PROCEDURE.csv")
+df_waypoint = pd.read_csv(f"{fsl_base_dir}/WAYPOINT.csv")
+df_vhf = pd.read_csv(f"{fsl_base_dir}/VHF_NAVAID.csv")
+df_ndb = pd.read_csv(f"{fsl_base_dir}/NDB_NAVAID.csv")
 
 
 def main() -> None:
-    # restore directories
-    shutil.rmtree(output_folder, ignore_errors=True)
-    os.makedirs(output_folder)
-    os.makedirs(os.path.join(output_folder, "Supp"), exist_ok=True)
-    os.makedirs(os.path.join(output_folder, "Star"), exist_ok=True)
-    os.makedirs(os.path.join(output_folder, "Sid"), exist_ok=True)
-    export_airport_supp()
-    export_airport_sid()
-    export_airport_star()
-    export_airport_app()
-    open(f"{output_folder}/debug.txt", 'w').write('\n'.join(debug_lines))
+    try:
+        # restore directories
+        shutil.rmtree(output_dir, ignore_errors=True)
+        os.makedirs(output_dir)
+        os.makedirs(os.path.join(output_dir, "Supp"), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, "Star"), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, "Sid"), exist_ok=True)
+        export_airport_supp()
+        export_airport_sid()
+        export_airport_star()
+        export_airport_app()
+    finally:
+        open(f"{output_dir}/debug.txt", 'w').write('\n'.join(debug_lines))
 
 
 def export_airport_supp() -> None:
@@ -44,7 +47,7 @@ def export_airport_supp() -> None:
         lines.append("[Transition_Level]")
         trs_lvl = int(row['TRANSITION_LEVEL'])
         lines.append(f"Altitude={trs_lvl}")
-        open(f"{output_folder}/Supp/{arpt_name}.supp",
+        open(f"{output_dir}/Supp/{arpt_name}.supp",
              'w').write('\n'.join(lines))
         print(f"Exported: {arpt_name}.supp")
 
@@ -109,7 +112,7 @@ def export_airport_sid() -> None:
                     full_lines.extend(ls)
                     k += 1
             filename = f"{arpt}.sid{'trs' if pt=='trans' else ''}"
-            open(f"{output_folder}/Sid/{filename}",
+            open(f"{output_dir}/Sid/{filename}",
                  'w').write('\n'.join(full_lines))
             print(f"Exported: {filename}")
 
@@ -175,7 +178,7 @@ def export_airport_star() -> None:
                     full_lines.extend(ls)
                     k += 1
             filename = f"{arpt}.star{'trs' if pt=='trans' else ''}"
-            open(f"{output_folder}/Star/{filename}",
+            open(f"{output_dir}/Star/{filename}",
                  'w').write('\n'.join(full_lines))
             print(f"Exported: {filename}")
 
@@ -227,7 +230,7 @@ def export_airport_app() -> None:
                     full_lines.extend(ls)
                     k += 1
             filename = f"{arpt}.app{'trs' if pt=='trans' else ''}"
-            open(f"{output_folder}/Star/{filename}",
+            open(f"{output_dir}/Star/{filename}",
                  'w').write('\n'.join(full_lines))
             print(f"Exported: {filename}")
 
@@ -481,4 +484,6 @@ def print_debug_message(msg: str) -> None:
 
 
 if __name__ == "__main__":
+    global debug_lines
+    debug_lines = []
     main()

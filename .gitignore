@@ -2,5 +2,5 @@
 /.venv
 /.vscode
 *.pdf
-/FSL-Fulltest
-/iFly-Final
+/FSL-*
+/iFly-*
