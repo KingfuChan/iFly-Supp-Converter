@@ -1,6 +1,7 @@
 import os
 import shutil
 import math
+from zipfile import ZipFile, ZIP_DEFLATED
 import pandas as pd
 
 fsl_base_dir = "FSL-2313"
@@ -22,13 +23,22 @@ def main() -> None:
         os.makedirs(os.path.join(output_dir, "Supp"), exist_ok=True)
         os.makedirs(os.path.join(output_dir, "Star"), exist_ok=True)
         os.makedirs(os.path.join(output_dir, "Sid"), exist_ok=True)
+        # process
         export_airport_supp()
         export_airport_sid()
         export_airport_star()
         export_airport_app()
+        # pack
+        shutil.copy("Installation.txt", f"{output_dir}/Installation.txt")
+        with ZipFile(f"{output_dir}-CHN-PROC-FULL.zip", 'w',
+                     compression=ZIP_DEFLATED, compresslevel=9) as zipf:
+            for root, dirs, files in os.walk(output_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, output_dir)
+                    zipf.write(file_path, arcname=arcname)
     finally:
-        open(f"{output_dir}/debug.txt", 'w',
-             newline='\r\n').write('\n'.join(debug_lines))
+        open("debug.txt", 'w', newline='\r\n').write('\n'.join(debug_lines))
 
 
 def export_airport_supp() -> None:

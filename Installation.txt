@@ -1,0 +1,20 @@
+iFly补充数据包安装说明：
+
+1. 包含数据释义：
+	Supp文件夹包含机场补充基础数据，包括机场速度限制及高度、过渡高度、过渡高度层信息。其中速度限制高度为推算值，可能存在偏差。Supp文件中亦可自行添加停机位坐标，但本数据包中不含该项。
+	Star文件夹包含机场进场程序及进近程序，含trs结尾文件为过渡程序。
+	Sid文件夹包含机场离场程序，含trs结尾文件为过渡程序。
+	进离场数据已包含当期所有Navigraph数据。程序各项内容与FSL数据对齐。
+
+2. 安装PMDG导航数据，在P3D中加载任意PMDG机模，生成新的ARPT_RWY.dat文件，然后将PMDG/NavData内文件，包括：
+	- Airport.dat
+	- ARPT_RWY.txt
+	- cycle_info.txt
+	- FMC_Ident.txt
+	- wpNavAID.txt
+	- wpNavAPT.txt
+	- wpNavFIX.txt
+	- wpNavRTE.txt
+	复制到iFlyData/Permanent中并覆盖。
+
+3. 解压Sid、Star、Supp文件夹至iFlyData/Supplement下。

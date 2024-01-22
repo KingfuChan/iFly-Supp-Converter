@@ -4,3 +4,5 @@
 *.pdf
 /FSL-*
 /iFly-*
+debug.txt
+*.zip
