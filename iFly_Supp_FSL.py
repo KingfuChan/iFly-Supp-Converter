@@ -27,7 +27,8 @@ def main() -> None:
         export_airport_star()
         export_airport_app()
     finally:
-        open(f"{output_dir}/debug.txt", 'w').write('\n'.join(debug_lines))
+        open(f"{output_dir}/debug.txt", 'w',
+             newline='\r\n').write('\n'.join(debug_lines))
 
 
 def export_airport_supp() -> None:
@@ -47,8 +48,8 @@ def export_airport_supp() -> None:
         lines.append("[Transition_Level]")
         trs_lvl = int(row['TRANSITION_LEVEL'])
         lines.append(f"Altitude={trs_lvl}")
-        open(f"{output_dir}/Supp/{arpt_name}.supp",
-             'w').write('\n'.join(lines))
+        open(f"{output_dir}/Supp/{arpt_name}.supp", 'w',
+             newline='\r\n').write('\n'.join(lines))
         print(f"Exported: {arpt_name}.supp")
 
 
@@ -112,8 +113,8 @@ def export_airport_sid() -> None:
                     full_lines.extend(ls)
                     k += 1
             filename = f"{arpt}.sid{'trs' if pt=='trans' else ''}"
-            open(f"{output_dir}/Sid/{filename}",
-                 'w').write('\n'.join(full_lines))
+            open(f"{output_dir}/Sid/{filename}", 'w',
+                 newline='\r\n').write('\n'.join(full_lines))
             print(f"Exported: {filename}")
 
 
@@ -178,8 +179,8 @@ def export_airport_star() -> None:
                     full_lines.extend(ls)
                     k += 1
             filename = f"{arpt}.star{'trs' if pt=='trans' else ''}"
-            open(f"{output_dir}/Star/{filename}",
-                 'w').write('\n'.join(full_lines))
+            open(f"{output_dir}/Star/{filename}", 'w',
+                 newline='\r\n').write('\n'.join(full_lines))
             print(f"Exported: {filename}")
 
 
@@ -230,8 +231,8 @@ def export_airport_app() -> None:
                     full_lines.extend(ls)
                     k += 1
             filename = f"{arpt}.app{'trs' if pt=='trans' else ''}"
-            open(f"{output_dir}/Star/{filename}",
-                 'w').write('\n'.join(full_lines))
+            open(f"{output_dir}/Star/{filename}", 'w',
+                 newline='\r\n').write('\n'.join(full_lines))
             print(f"Exported: {filename}")
 
 
