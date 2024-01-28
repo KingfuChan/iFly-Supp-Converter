@@ -1,8 +1,10 @@
 .gitignore
+
 /.venv
 /.vscode
-*.pdf
+/__pycache__
 /FSL-*
 /iFly-*
-debug.txt
+
+*.pdf
 *.zip
