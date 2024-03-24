@@ -1,2 +1,2 @@
-base_dir = "FSL-2401"
-output_dir = "iFly-2401"
+base_dir = "FSL-2402"
+output_dir = "iFly-2402"

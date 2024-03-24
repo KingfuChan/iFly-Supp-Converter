@@ -167,8 +167,10 @@ def export_airport_star() -> None:
                     # find a previous procedure with same ident
                     for pn in dict_arpt['main'].keys():
                         if pn.split('.')[0] == proc_name:
-                            # drop first point (IF leg)
-                            dict_arpt['main'][pn].extend(proc_legs[1:])
+                            # drop first point (IF leg), reversed extend
+                            plegs = list(proc_legs)  # copy by val
+                            plegs.extend(dict_arpt['main'][pn][1:])
+                            dict_arpt['main'][pn] = plegs
                             is_extended = True
                     if is_extended:
                         continue
