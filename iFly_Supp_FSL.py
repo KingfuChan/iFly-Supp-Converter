@@ -7,12 +7,14 @@ import pandas as pd
 
 from directories import base_dir, output_dir
 
-df_airport = pd.read_csv(f"{base_dir}/AIRPORT.csv")
-df_runway = pd.read_csv(f"{base_dir}/RUNWAY.csv")
-df_proc = pd.read_csv(f"{base_dir}/AIRPORT_PROCEDURE.csv")
-df_waypoint = pd.read_csv(f"{base_dir}/WAYPOINT.csv")
-df_vhf = pd.read_csv(f"{base_dir}/VHF_NAVAID.csv")
-df_ndb = pd.read_csv(f"{base_dir}/NDB_NAVAID.csv")
+DF_APT = pd.read_csv(f"{base_dir}/AIRPORT.csv")
+DF_RWY = pd.read_csv(f"{base_dir}/RUNWAY.csv")
+DF_PRO = pd.read_csv(f"{base_dir}/AIRPORT_PROCEDURE.csv")
+DF_WPT = pd.read_csv(f"{base_dir}/WAYPOINT.csv")
+DF_VHF = pd.read_csv(f"{base_dir}/VHF_NAVAID.csv")
+DF_NDB = pd.read_csv(f"{base_dir}/NDB_NAVAID.csv")
+
+LOG = []
 
 
 def main() -> None:
@@ -24,7 +26,7 @@ def main() -> None:
         os.makedirs(os.path.join(output_dir, "Supp"), exist_ok=True)
         os.makedirs(os.path.join(output_dir, "Star"), exist_ok=True)
         os.makedirs(os.path.join(output_dir, "Sid"), exist_ok=True)
-        # process
+        # convert
         print_debug_message("[INFO] Converting from FSL to iFly...")
         export_airport_supp()
         export_airport_sid()
@@ -45,13 +47,13 @@ def main() -> None:
         print_debug_message(f"[ERRO] {repr(e)}")
     finally:
         open(f"{output_dir}/Log.txt", 'w',
-             newline='\r\n').write('\n'.join(log_lines))
+             newline='\r\n').write('\n'.join(LOG))
 
 
 def export_airport_supp() -> None:
-    df_airport.loc[:, 'TRANSITIONS_ALT'].fillna(9800, inplace=True)
-    df_airport.loc[:, 'TRANSITION_LEVEL'].fillna(11800, inplace=True)
-    for _, row in df_airport.iterrows():
+    DF_APT.loc[:, 'TRANSITIONS_ALT'].fillna(9800, inplace=True)
+    DF_APT.loc[:, 'TRANSITION_LEVEL'].fillna(11800, inplace=True)
+    for _, row in DF_APT.iterrows():
         arpt_name = row['ARPT_IDENT']
         lines = ["[Speed_Transition]"]
         lines.append("Speed=250")
@@ -71,14 +73,14 @@ def export_airport_supp() -> None:
 
 
 def export_airport_sid() -> None:
-    arpt_list = df_proc.loc[(df_proc['SUBS_CODE'] == 'D') &
-                            (df_proc['ROUTE_TYPE'].isin(
-                                ['0', '1', '2', '3', '4', '5', '6'])),
-                            'ARPT_IDENT'].value_counts(sort=False).index.to_list()
+    arpt_list = DF_PRO.loc[(DF_PRO['SUBS_CODE'] == 'D') &
+                           (DF_PRO['ROUTE_TYPE'].isin(
+                               ['0', '1', '2', '3', '4', '5', '6'])),
+                           'ARPT_IDENT'].value_counts(sort=False).index.to_list()
     for arpt in arpt_list:  # by airport
-        df_arpt_proc = df_proc[(df_proc['ARPT_IDENT'] == arpt) &
-                               (df_proc['SUBS_CODE'] == 'D') &  # departure
-                               (df_proc['ROUTE_TYPE'].isin(['1', '2', '3', '4', '5', '6']))]  # RNAV SID
+        df_arpt_proc = DF_PRO[(DF_PRO['ARPT_IDENT'] == arpt) &
+                              (DF_PRO['SUBS_CODE'] == 'D') &  # departure
+                              (DF_PRO['ROUTE_TYPE'].isin(['1', '2', '3', '4', '5', '6']))]  # RNAV SID
         # structure: {type:{procedure:[[leg,],]}}
         dict_arpt = {'main': {}, 'trans': {}}
         for proc_type in ['0', '1', '2', '3', '4', '5', '6']:  # force sequence
@@ -94,8 +96,8 @@ def export_airport_sid() -> None:
                 if proc_type in ['3', '6']:  # SID trans
                     dict_arpt['trans'][f"{proc_conn}.{proc_name}"] = proc_legs
                     continue
-                arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
-                                          'RUNWAY_IDENT'].to_list()
+                arpt_rwys = DF_RWY.loc[DF_RWY['ARPT_IDENT'] == arpt,
+                                       'RUNWAY_IDENT'].to_list()
                 if pd.isna(proc_conn) or proc_conn == 'ALL':
                     is_extended = False
                     # find a previous procedure with same ident
@@ -136,15 +138,15 @@ def export_airport_sid() -> None:
 
 
 def export_airport_star() -> None:
-    arpt_list = df_proc.loc[(df_proc['SUBS_CODE'] == 'E') &
-                            (df_proc['ROUTE_TYPE'].isin(
-                                ['3', '2', '1', '6', '5', '4'])),
-                            'ARPT_IDENT'].value_counts(sort=False).index.to_list()
+    arpt_list = DF_PRO.loc[(DF_PRO['SUBS_CODE'] == 'E') &
+                           (DF_PRO['ROUTE_TYPE'].isin(
+                               ['3', '2', '1', '6', '5', '4'])),
+                           'ARPT_IDENT'].value_counts(sort=False).index.to_list()
     for arpt in arpt_list:  # by airport
-        df_arpt_proc = df_proc[(df_proc['ARPT_IDENT'] == arpt) &
-                               (df_proc['SUBS_CODE'] == 'E') &  # arrival
-                               (df_proc['ROUTE_TYPE'].isin(
-                                   ['3', '2', '1', '6', '5', '4']))]  # RNAV STAR
+        df_arpt_proc = DF_PRO[(DF_PRO['ARPT_IDENT'] == arpt) &
+                              (DF_PRO['SUBS_CODE'] == 'E') &  # arrival
+                              (DF_PRO['ROUTE_TYPE'].isin(
+                                  ['3', '2', '1', '6', '5', '4']))]  # RNAV STAR
         # structure: {type:{procedure:[[leg,],]}}
         dict_arpt = {'main': {}, 'trans': {}}
         for proc_type in ['3', '2', '1', '6', '5', '4']:  # force sequence
@@ -160,8 +162,8 @@ def export_airport_star() -> None:
                 if proc_type in ['1', '4']:  # STAR trans
                     dict_arpt['trans'][f"{proc_conn}.{proc_name}"] = proc_legs
                     continue
-                arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
-                                          'RUNWAY_IDENT'].to_list()
+                arpt_rwys = DF_RWY.loc[DF_RWY['ARPT_IDENT'] == arpt,
+                                       'RUNWAY_IDENT'].to_list()
                 if pd.isna(proc_conn) or proc_conn == 'ALL':
                     is_extended = False
                     # find a previous procedure with same ident
@@ -204,11 +206,11 @@ def export_airport_star() -> None:
 
 
 def export_airport_app() -> None:
-    arpt_list = df_proc.loc[df_proc['SUBS_CODE'] == 'F',
-                            'ARPT_IDENT'].value_counts(sort=False).index.to_list()
+    arpt_list = DF_PRO.loc[DF_PRO['SUBS_CODE'] == 'F',
+                           'ARPT_IDENT'].value_counts(sort=False).index.to_list()
     for arpt in arpt_list:  # by airport
-        df_arpt_proc = df_proc[(df_proc['ARPT_IDENT'] == arpt) &
-                               (df_proc['SUBS_CODE'] == 'F')]  # approach
+        df_arpt_proc = DF_PRO[(DF_PRO['ARPT_IDENT'] == arpt) &
+                              (DF_PRO['SUBS_CODE'] == 'F')]  # approach
         # structure: {type:{procedure:[[leg,],]}}
         dict_arpt = {'main': {}, 'trans': {}}
         # by procedure
@@ -227,8 +229,8 @@ def export_airport_app() -> None:
                         rw_ident += proc_name[3] if proc_name[3] in ['L', 'R'] else ""
                     dict_arpt['main'][f"{proc_name}.{rw_ident}"] = proc_legs
                 else:  # in case not specified, e.g. ZYJM:CNDB
-                    arpt_rwys = df_runway.loc[df_runway['ARPT_IDENT'] == arpt,
-                                              'RUNWAY_IDENT'].to_list()
+                    arpt_rwys = DF_RWY.loc[DF_RWY['ARPT_IDENT'] == arpt,
+                                           'RUNWAY_IDENT'].to_list()
                     for rw in arpt_rwys:  # rw is like "RW09L"
                         dict_arpt['main'][f"{proc_name}.{rw[2:]}"] = proc_legs
                         print_debug_message(
@@ -294,8 +296,8 @@ def extract_leg(row: pd.Series) -> list:
             extracted_lines.append(f"Name={pt_name}")
             latitude, longitude, msg = (0, 0, "")
             if row['FIX_SUBS_CODE'] == 'G':  # use runway csv
-                rw_row = df_runway[(df_runway['ARPT_IDENT'] == arpt) &
-                                   (df_runway['RUNWAY_IDENT'] == pt_name)]
+                rw_row = DF_RWY[(DF_RWY['ARPT_IDENT'] == arpt) &
+                                (DF_RWY['RUNWAY_IDENT'] == pt_name)]
                 if rw_row.shape[0]:
                     latitude = rw_row['RUNWAY_LAT'].iloc[0]
                     longitude = rw_row['RUNWAY_LON'].iloc[0]
@@ -422,13 +424,13 @@ def extract_leg(row: pd.Series) -> list:
 
 def find_a_point(ident: str, airport: str, sect_code: str, subs_code: str) -> tuple:
     """returns (lat, lon, msg) tuple"""
-    arpt_row = df_airport[df_airport['ARPT_IDENT'] == airport]
+    arpt_row = DF_APT[DF_APT['ARPT_IDENT'] == airport]
     if not arpt_row.shape[0]:
         return (0, 0, "airport not found")
     arpt_lat, arpt_lon = arpt_row.iloc[0][['ARPT_LAT', 'ARPT_LON']].to_list()
     if sect_code == 'E':  # enroute waypoint
-        p_match = df_waypoint[(df_waypoint['WAYPOINT_IDENT'] == ident) &
-                              (df_waypoint['SECT_CODE'] == 'E')]
+        p_match = DF_WPT[(DF_WPT['WAYPOINT_IDENT'] == ident) &
+                         (DF_WPT['SECT_CODE'] == 'E')]
         if p_match.shape[0]:
             p_all = pd.DataFrame(
                 {'LAT': p_match['WAYPOINT_LAT'],
@@ -437,8 +439,8 @@ def find_a_point(ident: str, airport: str, sect_code: str, subs_code: str) -> tu
         else:
             return (0, 0, "enroute waypoint not found")
     elif sect_code == 'P' and subs_code == 'C':  # terminal waypoint
-        p_match = df_waypoint[(df_waypoint['WAYPOINT_IDENT'] == ident) &
-                              (df_waypoint['REGION_CODE'] == airport)]
+        p_match = DF_WPT[(DF_WPT['WAYPOINT_IDENT'] == ident) &
+                         (DF_WPT['REGION_CODE'] == airport)]
         if p_match.shape[0]:
             p_all = pd.DataFrame(
                 {'LAT': p_match['WAYPOINT_LAT'],
@@ -447,7 +449,7 @@ def find_a_point(ident: str, airport: str, sect_code: str, subs_code: str) -> tu
         else:
             return (0, 0, "terminal waypoint not found")
     elif sect_code == 'D' and (pd.isna(subs_code) or not len(subs_code.strip())):  # VOR
-        p_match = df_vhf[df_vhf['VOR_IDENT'] == ident]
+        p_match = DF_VHF[DF_VHF['VOR_IDENT'] == ident]
         if p_match.shape[0]:
             p_all = pd.DataFrame(
                 {'LAT': p_match['VOR_LAT'],
@@ -457,8 +459,8 @@ def find_a_point(ident: str, airport: str, sect_code: str, subs_code: str) -> tu
             return (0, 0, "VOR not found")
     elif (sect_code == 'D' and subs_code == 'B') or \
             (sect_code == 'P' and subs_code == 'N'):  # NDB
-        p_match = df_ndb[(df_ndb['NDB_IDENT'] == ident) &
-                         (df_ndb['SECT_CODE'] == sect_code)]
+        p_match = DF_NDB[(DF_NDB['NDB_IDENT'] == ident) &
+                         (DF_NDB['SECT_CODE'] == sect_code)]
         if p_match.shape[0]:
             p_all = pd.DataFrame(
                 {'LAT': p_match['NDB_LAT'],
@@ -467,8 +469,8 @@ def find_a_point(ident: str, airport: str, sect_code: str, subs_code: str) -> tu
         else:
             return (0, 0, "NDB not found")
     elif sect_code == 'P' and subs_code == 'G':  # runway
-        p_match = df_runway[(df_runway['ARPT_IDENT'] == airport) &
-                            (df_runway['RUNWAY_IDENT'] == ident)]
+        p_match = DF_RWY[(DF_RWY['ARPT_IDENT'] == airport) &
+                         (DF_RWY['RUNWAY_IDENT'] == ident)]
         if p_match.shape[0]:
             p_all = pd.DataFrame(
                 {'LAT': p_match['RUNWAY_LAT'],
@@ -499,12 +501,10 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 
 def print_debug_message(msg: str) -> None:
-    log_lines.append(msg)
+    LOG.append(msg)
     print(msg)
 
 
 if __name__ == "__main__":
-    global log_lines
-    log_lines = []
     main()
     input("Press Enter to exit...")
