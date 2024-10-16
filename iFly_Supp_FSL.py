@@ -51,8 +51,8 @@ def main() -> None:
 
 
 def export_airport_supp() -> None:
-    DF_APT.loc[:, 'TRANSITIONS_ALT'].fillna(9800, inplace=True)
-    DF_APT.loc[:, 'TRANSITION_LEVEL'].fillna(11800, inplace=True)
+    DF_APT['TRANSITIONS_ALT'] = DF_APT['TRANSITIONS_ALT'].fillna(9800)
+    DF_APT['TRANSITION_LEVEL'] = DF_APT['TRANSITION_LEVEL'].fillna(11800)
     for _, row in DF_APT.iterrows():
         arpt_name = row['ARPT_IDENT']
         lines = ["[Speed_Transition]"]
@@ -79,8 +79,10 @@ def export_airport_sid() -> None:
                            'ARPT_IDENT'].value_counts(sort=False).index.to_list()
     for arpt in arpt_list:  # by airport
         df_arpt_proc = DF_PRO[(DF_PRO['ARPT_IDENT'] == arpt) &
-                              (DF_PRO['SUBS_CODE'] == 'D') &  # departure
-                              (DF_PRO['ROUTE_TYPE'].isin(['1', '2', '3', '4', '5', '6']))]  # RNAV SID
+                              # departure
+                              (DF_PRO['SUBS_CODE'] == 'D') &
+                              # RNAV SID
+                              (DF_PRO['ROUTE_TYPE'].isin(['1', '2', '3', '4', '5', '6']))]
         # structure: {type:{procedure:[[leg,],]}}
         dict_arpt = {'main': {}, 'trans': {}}
         for proc_type in ['0', '1', '2', '3', '4', '5', '6']:  # force sequence
@@ -131,7 +133,7 @@ def export_airport_sid() -> None:
                     full_lines.append(f"[{pn}.{k}]")
                     full_lines.extend(ls)
                     k += 1
-            filename = f"{arpt}.sid{'trs' if pt=='trans' else ''}"
+            filename = f"{arpt}.sid{'trs' if pt == 'trans' else ''}"
             open(f"{output_dir}/Sid/{filename}", 'w',
                  newline='\r\n').write('\n'.join(full_lines))
             print_debug_message(f"[INFO] Exported: {filename}")
@@ -144,9 +146,10 @@ def export_airport_star() -> None:
                            'ARPT_IDENT'].value_counts(sort=False).index.to_list()
     for arpt in arpt_list:  # by airport
         df_arpt_proc = DF_PRO[(DF_PRO['ARPT_IDENT'] == arpt) &
-                              (DF_PRO['SUBS_CODE'] == 'E') &  # arrival
-                              (DF_PRO['ROUTE_TYPE'].isin(
-                                  ['3', '2', '1', '6', '5', '4']))]  # RNAV STAR
+                              # arrival
+                              (DF_PRO['SUBS_CODE'] == 'E') &
+                              # RNAV STAR
+                              (DF_PRO['ROUTE_TYPE'].isin(['3', '2', '1', '6', '5', '4']))]
         # structure: {type:{procedure:[[leg,],]}}
         dict_arpt = {'main': {}, 'trans': {}}
         for proc_type in ['3', '2', '1', '6', '5', '4']:  # force sequence
@@ -199,7 +202,7 @@ def export_airport_star() -> None:
                     full_lines.append(f"[{pn}.{k}]")
                     full_lines.extend(ls)
                     k += 1
-            filename = f"{arpt}.star{'trs' if pt=='trans' else ''}"
+            filename = f"{arpt}.star{'trs' if pt == 'trans' else ''}"
             open(f"{output_dir}/Star/{filename}", 'w',
                  newline='\r\n').write('\n'.join(full_lines))
             print_debug_message(f"[INFO] Exported: {filename}")
@@ -251,7 +254,7 @@ def export_airport_app() -> None:
                     full_lines.append(f"[{pn}.{k}]")
                     full_lines.extend(ls)
                     k += 1
-            filename = f"{arpt}.app{'trs' if pt=='trans' else ''}"
+            filename = f"{arpt}.app{'trs' if pt == 'trans' else ''}"
             open(f"{output_dir}/Star/{filename}", 'w',
                  newline='\r\n').write('\n'.join(full_lines))
             print_debug_message(f"[INFO] Exported: {filename}")
